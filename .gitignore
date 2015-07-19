@@ -1,2 +1,5 @@
 artifacts
 Forge
+.gradle
+dist
+modinstance.txt

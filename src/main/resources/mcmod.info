@@ -1,0 +1,16 @@
+[
+{
+  "modid": "terrariumfarm",
+  "name": "Terrarium Farm",
+  "description": "Farm in a box!",
+  "version": "${version}",
+  "mcversion": "${mcversion}",
+  "url": "",
+  "updateUrl": "",
+  "authorList": ["Matt DeKrey", "Seth DeKrey"],
+  "credits": "",
+  "logoFile": "",
+  "screenshots": [],
+  "dependencies": []
+}
+]

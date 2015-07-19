@@ -1,4 +1,8 @@
 @echo off
-mkdir artifacts
-dir /s /B src\*.java > artifacts\sources.txt
-javac -target 1.6 -source 1.6 @artifacts\sources.txt
+@del /Q dist\*
+@del /Q build\libs\*
+call Forge\gradlew.bat build
+@mkdir dist
+@copy build\libs\* dist
+set /p altDest=<modinstance.txt
+@copy dist %altDest%
