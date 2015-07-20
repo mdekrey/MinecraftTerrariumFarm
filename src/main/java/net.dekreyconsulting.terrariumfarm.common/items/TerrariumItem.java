@@ -26,7 +26,7 @@ public class TerrariumItem extends Item {
         else {
             --itemStack.stackSize;
             
-            world.setBlock(x, y + 1, z, TerrariumBlocks.top, 0, 3);
+            world.setBlock(x, y + 1, z, TerrariumBlocks.top, 7, 3);
             world.setBlock(x, y + 0, z, TerrariumBlocks.base, 0, 3);
             if (itemStack.hasDisplayName()) {
                 ((TileEntityTerrarium)world.getTileEntity(x, y, z)).setCustomName(itemStack.getDisplayName());

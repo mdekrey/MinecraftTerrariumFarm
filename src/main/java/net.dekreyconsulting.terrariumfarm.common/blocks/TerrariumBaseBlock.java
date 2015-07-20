@@ -102,7 +102,7 @@ public class TerrariumBaseBlock extends net.minecraft.block.BlockContainer imple
 
             if (terrarium != null)
             {
-                terrarium.displayGuiTo(world, player);
+                player.openGui(TerrariumFarm.instance, 0, world, x, y, z);
             }
 
             return true;

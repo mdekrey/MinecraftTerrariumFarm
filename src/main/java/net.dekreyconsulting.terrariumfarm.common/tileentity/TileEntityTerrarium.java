@@ -25,7 +25,7 @@ public class TileEntityTerrarium extends TileEntity implements ISidedInventory
     private static final int[] GroundInventorySlots = new int[] {1};
     private static final int[] ProduceInventorySlots = new int[] {2,3,4,5};
     private static final int[] ProduceAndSeedInventorySlots = new int[] {0,2,3,4,5};
-    private ItemStack[] inventory = new ItemStack[6];
+    private ItemStack[] inventory = new ItemStack[9]; // TODO - set this back to 6
     private String customName;
 
     /**
