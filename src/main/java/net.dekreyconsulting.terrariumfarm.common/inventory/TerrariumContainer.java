@@ -12,8 +12,7 @@ import net.minecraft.inventory.ICrafting;
 public class TerrariumContainer extends Container
 {
     private TileEntityTerrarium terrarium;
-    // TODO - use all 6
-    static final int TerrariumSlots = 3;
+    static final int TerrariumSlots = 6;
     // player inventory + quickbar
     static final int PlayerSlotCount = 9 * 3 + 9;
 
@@ -21,9 +20,13 @@ public class TerrariumContainer extends Container
     {
         this.terrarium = terrarium;
         terrarium.openInventory();
-        this.addSlotToContainer(new Slot(terrarium, 0, 56, 17));
-        this.addSlotToContainer(new Slot(terrarium, 1, 56, 53));
-        this.addSlotToContainer(new Slot(terrarium, 2, 116, 35));
+        GroundSlot groundSlot = new GroundSlot(terrarium, 1, 42, 45);
+        this.addSlotToContainer(new SeedSlot(terrarium, 0, 42, 24, groundSlot));
+        this.addSlotToContainer(groundSlot);
+        this.addSlotToContainer(new Slot(terrarium, 2, 92, 26));
+        this.addSlotToContainer(new Slot(terrarium, 3, 110, 26));
+        this.addSlotToContainer(new Slot(terrarium, 4, 92, 44));
+        this.addSlotToContainer(new Slot(terrarium, 5, 110, 44));
 
         // add player inventory to gui
         for (int row = 0; row < 3; ++row)
@@ -68,7 +71,7 @@ public class TerrariumContainer extends Container
     }
 
     /**
-     * Called when a player shift-clicks on a slot. You must override this or you will crash when someone does that.
+     * Called when a player shift-clicks on a slot.
      */
     public ItemStack transferStackInSlot(EntityPlayer player, int fromSlotIndex)
     {
