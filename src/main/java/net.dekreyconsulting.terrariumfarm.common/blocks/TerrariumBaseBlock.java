@@ -14,12 +14,12 @@ import net.minecraft.util.IIcon;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.entity.player.EntityPlayer;
 
-public class TerrariumBaseBlock extends net.minecraft.block.BlockFarmland implements ITileEntityProvider {
+public class TerrariumBaseBlock extends net.minecraft.block.BlockContainer implements ITileEntityProvider {
 	
     private IIcon texture;
 	
 	public TerrariumBaseBlock() {
-        super();
+        super(Material.ground);
 		setBlockName(TerrariumFarm.MODID + "_" + "terrariumBaseBlock");
 		setHardness(1.6F);
 		setStepSound(Block.soundTypeGravel);
@@ -68,7 +68,6 @@ public class TerrariumBaseBlock extends net.minecraft.block.BlockFarmland implem
     
     public TileEntity createNewTileEntity(World world, int metadata)
     {
-        net.minecraft.client.Minecraft.getMinecraft().thePlayer.sendChatMessage("Add a terrarium");
         return new TileEntityTerrarium();
     }
     
@@ -100,11 +99,6 @@ public class TerrariumBaseBlock extends net.minecraft.block.BlockFarmland implem
         else
         {
             TileEntityTerrarium terrarium = (TileEntityTerrarium)world.getTileEntity(x, y, z);
-            
-            if (terrarium == null) {
-                terrarium = (TileEntityTerrarium)createNewTileEntity(world, 0);
-                world.setTileEntity(x, y, z, terrarium);
-            }
 
             if (terrarium != null)
             {

@@ -11,9 +11,10 @@ public class TerrariumItem extends Item {
 	
     public TerrariumItem()
     {
-        this.maxStackSize = 1;
+        this.maxStackSize = 64;
         this.setCreativeTab(CreativeTabs.tabRedstone);
         this.setUnlocalizedName(TerrariumFarm.MODID + "_" + "terrarium");
+        this.setTextureName("terrariumfarm:terrarium_icon");
     }
 	
     @Override
@@ -27,6 +28,10 @@ public class TerrariumItem extends Item {
             
             world.setBlock(x, y + 1, z, TerrariumBlocks.top, 0, 3);
             world.setBlock(x, y + 0, z, TerrariumBlocks.base, 0, 3);
+            if (itemStack.hasDisplayName()) {
+                ((TileEntityTerrarium)world.getTileEntity(x, y, z)).setCustomName(itemStack.getDisplayName());
+            }
+
             
             return true;
         }

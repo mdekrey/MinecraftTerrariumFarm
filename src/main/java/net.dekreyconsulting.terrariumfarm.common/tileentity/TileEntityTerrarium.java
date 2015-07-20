@@ -21,13 +21,11 @@ import net.minecraft.nbt.NBTTagList;
 
 public class TileEntityTerrarium extends TileEntity implements ISidedInventory
 {
-    private static final int[] TopInventorySlots = new int[] {0};
-    private static final int[] BottomInventorySlots = new int[] {2, 1};
-    private static final int[] SideInventorySlots = new int[] {1};
-    private ItemStack[] inventory = new ItemStack[3];
-    public int burndownCounter;
-    public int maxBurnTime;
-    public int cookingCounter;
+    private static final int[] SeedInventorySlots = new int[] {0};
+    private static final int[] GroundInventorySlots = new int[] {1};
+    private static final int[] ProduceInventorySlots = new int[] {2,3,4,5};
+    private static final int[] ProduceAndSeedInventorySlots = new int[] {0,2,3,4,5};
+    private ItemStack[] inventory = new ItemStack[6];
     private String customName;
 
     /**
@@ -41,34 +39,34 @@ public class TileEntityTerrarium extends TileEntity implements ISidedInventory
     /**
      * Returns the stack in slot i
      */
-    public ItemStack getStackInSlot(int p_70301_1_)
+    public ItemStack getStackInSlot(int slot)
     {
-        return this.inventory[p_70301_1_];
+        return this.inventory[slot];
     }
 
     /**
      * Removes from an inventory slot (first arg) up to a specified number (second arg) of items and returns them in a
      * new stack.
      */
-    public ItemStack decrStackSize(int p_70298_1_, int p_70298_2_)
+    public ItemStack decrStackSize(int slot, int numberToRemove)
     {
-        if (this.inventory[p_70298_1_] != null)
+        if (this.inventory[slot] != null)
         {
             ItemStack var3;
 
-            if (this.inventory[p_70298_1_].stackSize <= p_70298_2_)
+            if (this.inventory[slot].stackSize <= numberToRemove)
             {
-                var3 = this.inventory[p_70298_1_];
-                this.inventory[p_70298_1_] = null;
+                var3 = this.inventory[slot];
+                this.inventory[slot] = null;
                 return var3;
             }
             else
             {
-                var3 = this.inventory[p_70298_1_].splitStack(p_70298_2_);
+                var3 = this.inventory[slot].splitStack(numberToRemove);
 
-                if (this.inventory[p_70298_1_].stackSize == 0)
+                if (this.inventory[slot].stackSize == 0)
                 {
-                    this.inventory[p_70298_1_] = null;
+                    this.inventory[slot] = null;
                 }
 
                 return var3;
@@ -84,12 +82,13 @@ public class TileEntityTerrarium extends TileEntity implements ISidedInventory
      * When some containers are closed they call this on each slot, then drop whatever it returns as an EntityItem -
      * like when you close a workbench GUI.
      */
-    public ItemStack getStackInSlotOnClosing(int p_70304_1_)
+    public ItemStack getStackInSlotOnClosing(int slot)
     {
-        if (this.inventory[p_70304_1_] != null)
+        // copied from the furnace decompiled code - not sure why I would null the value out, it's going to get reset
+        if (this.inventory[slot] != null)
         {
-            ItemStack var2 = this.inventory[p_70304_1_];
-            this.inventory[p_70304_1_] = null;
+            ItemStack var2 = this.inventory[slot];
+            this.inventory[slot] = null;
             return var2;
         }
         else
@@ -101,13 +100,13 @@ public class TileEntityTerrarium extends TileEntity implements ISidedInventory
     /**
      * Sets the given item stack to the specified slot in the inventory (can be crafting or armor sections).
      */
-    public void setInventorySlotContents(int p_70299_1_, ItemStack p_70299_2_)
+    public void setInventorySlotContents(int slot, ItemStack contents)
     {
-        this.inventory[p_70299_1_] = p_70299_2_;
+        this.inventory[slot] = contents;
 
-        if (p_70299_2_ != null && p_70299_2_.stackSize > this.getInventoryStackLimit())
+        if (contents != null && contents.stackSize > this.getInventoryStackLimit())
         {
-            p_70299_2_.stackSize = this.getInventoryStackLimit();
+            contents.stackSize = this.getInventoryStackLimit();
         }
     }
 
@@ -116,8 +115,7 @@ public class TileEntityTerrarium extends TileEntity implements ISidedInventory
      */
     public String getInventoryName()
     {
-        // TODO - name
-        return this.hasCustomInventoryName() ? this.customName : "container.furnace";
+        return this.hasCustomInventoryName() ? this.customName : TerrariumFarm.MODID + "_" + "terrarium.container";
     }
 
     /**
@@ -129,16 +127,16 @@ public class TileEntityTerrarium extends TileEntity implements ISidedInventory
         return this.customName != null && this.customName.length() > 0;
     }
 
-    // TODO - this was @Override before
-    public void setCustomName(String p_145951_1_)
+    // TODO - this was @Override before - should be related to how we rename on Anvil
+    public void setCustomName(String newName)
     {
-        this.customName = p_145951_1_;
+        this.customName = newName;
     }
 
-    public void readFromNBT(NBTTagCompound p_145839_1_)
+    public void readFromNBT(NBTTagCompound data)
     {
-        super.readFromNBT(p_145839_1_);
-        NBTTagList var2 = p_145839_1_.getTagList("Items", 10);
+        super.readFromNBT(data);
+        NBTTagList var2 = data.getTagList("Items", 10);
         this.inventory = new ItemStack[this.getSizeInventory()];
 
         for (int var3 = 0; var3 < var2.tagCount(); ++var3)
@@ -152,21 +150,15 @@ public class TileEntityTerrarium extends TileEntity implements ISidedInventory
             }
         }
 
-        this.burndownCounter = p_145839_1_.getShort("BurnTime");
-        this.cookingCounter = p_145839_1_.getShort("CookTime");
-        // this.maxBurnTime = getBurnTime(this.inventory[1]);
-
-        if (p_145839_1_.hasKey("CustomName"))
+        if (data.hasKey("CustomName"))
         {
-            this.customName = p_145839_1_.getString("CustomName");
+            this.customName = data.getString("CustomName");
         }
     }
 
-    public void writeToNBT(NBTTagCompound p_145841_1_)
+    public void writeToNBT(NBTTagCompound data)
     {
-        super.writeToNBT(p_145841_1_);
-        p_145841_1_.setShort("BurnTime", (short)this.burndownCounter);
-        p_145841_1_.setShort("CookTime", (short)this.cookingCounter);
+        super.writeToNBT(data);
         NBTTagList var2 = new NBTTagList();
 
         for (int var3 = 0; var3 < this.inventory.length; ++var3)
@@ -180,11 +172,11 @@ public class TileEntityTerrarium extends TileEntity implements ISidedInventory
             }
         }
 
-        p_145841_1_.setTag("Items", var2);
+        data.setTag("Items", var2);
 
         if (this.hasCustomInventoryName())
         {
-            p_145841_1_.setString("CustomName", this.customName);
+            data.setString("CustomName", this.customName);
         }
     }
 
@@ -193,27 +185,8 @@ public class TileEntityTerrarium extends TileEntity implements ISidedInventory
      */
     public int getInventoryStackLimit()
     {
-        return 64;
-    }
-
-    public int func_145953_d(int p_145953_1_)
-    {
-        return this.cookingCounter * p_145953_1_ / 200;
-    }
-
-    public int func_145955_e(int p_145955_1_)
-    {
-        if (this.maxBurnTime == 0)
-        {
-            this.maxBurnTime = 200;
-        }
-
-        return this.burndownCounter * p_145955_1_ / this.maxBurnTime;
-    }
-
-    public boolean func_145950_i()
-    {
-        return this.burndownCounter > 0;
+        // Choosing 80 because that's the number of dirt plots in a 9x9 farm
+        return 80;
     }
 
     public void updateEntity()
@@ -374,7 +347,9 @@ public class TileEntityTerrarium extends TileEntity implements ISidedInventory
      */
     public boolean isItemValidForSlot(int slot, ItemStack items)
     {
-        // TODO - dirt only in one, IPlantable only in the other
+        // 0 - IPlantable only
+        // 1 - dirt only
+        // Others, none
         return slot == 2 ? false : true;
     }
 
@@ -384,7 +359,12 @@ public class TileEntityTerrarium extends TileEntity implements ISidedInventory
      */
     public int[] getAccessibleSlotsFromSide(int side)
     {
-        return side == 0 ? TopInventorySlots : (side == 1 ? BottomInventorySlots : SideInventorySlots);
+        if (side == 0)
+            return SeedInventorySlots;
+        else if (side == 1)
+            return GroundInventorySlots;
+        else
+            return ProduceAndSeedInventorySlots;
     }
 
     /**
@@ -402,7 +382,7 @@ public class TileEntityTerrarium extends TileEntity implements ISidedInventory
      */
     public boolean canExtractItem(int slot, ItemStack item, int side)
     {
-        return side != 0 || slot != 1;
+        return java.util.Arrays.asList(getAccessibleSlotsFromSide(side)).contains(slot);
     }
     
     public void displayGuiTo(World world, EntityPlayer player) {

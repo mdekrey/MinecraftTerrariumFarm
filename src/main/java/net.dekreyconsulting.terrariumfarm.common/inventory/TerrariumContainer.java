@@ -12,17 +12,21 @@ import net.minecraft.inventory.ICrafting;
 public class TerrariumContainer extends Container
 {
     private TileEntityTerrarium terrarium;
+    // TODO - use all 6
+    static final int TerrariumSlots = 3;
+    // player inventory + quickbar
+    static final int PlayerSlotCount = 9 * 3 + 9;
 
     public TerrariumContainer(InventoryPlayer inventoryPlayer, TileEntityTerrarium terrarium)
     {
         this.terrarium = terrarium;
+        terrarium.openInventory();
         this.addSlotToContainer(new Slot(terrarium, 0, 56, 17));
         this.addSlotToContainer(new Slot(terrarium, 1, 56, 53));
         this.addSlotToContainer(new Slot(terrarium, 2, 116, 35));
-        int row;
 
         // add player inventory to gui
-        for (row = 0; row < 3; ++row)
+        for (int row = 0; row < 3; ++row)
         {
             for (int column = 0; column < 9; ++column)
             {
@@ -31,9 +35,9 @@ public class TerrariumContainer extends Container
         }
 
         // add player quickbar to gui
-        for (row = 0; row < 9; ++row)
+        for (int column = 0; column < 9; ++column)
         {
-            this.addSlotToContainer(new Slot(inventoryPlayer, row, 8 + row * 18, 142));
+            this.addSlotToContainer(new Slot(inventoryPlayer, column, 8 + column * 18, 142));
         }
     }
 
@@ -56,80 +60,51 @@ public class TerrariumContainer extends Container
     {
         return this.terrarium.isUseableByPlayer(player);
     }
+    
+    public void onContainerClosed(EntityPlayer player)
+    {
+        super.onContainerClosed(player);
+        this.terrarium.closeInventory();
+    }
 
     /**
      * Called when a player shift-clicks on a slot. You must override this or you will crash when someone does that.
      */
-    public ItemStack transferStackInSlot(EntityPlayer player, int slotIndex)
+    public ItemStack transferStackInSlot(EntityPlayer player, int fromSlotIndex)
     {
-        ItemStack var3 = null;
-        Slot slot = (Slot)this.inventorySlots.get(slotIndex);
+        ItemStack sourceItems = null;
+        Slot slot = (Slot)this.inventorySlots.get(fromSlotIndex);
 
         if (slot != null && slot.getHasStack())
         {
             ItemStack itemsToTransfer = slot.getStack();
             
-//            var3 = itemsToTransfer.copy();
-// 
-//             if (slotIndex == 2)
-//             {
-//                 if (!this.mergeItemStack(itemsToTransfer, 3, 39, true))
-//                 {
-//                     return null;
-//                 }
-// 
-//                 slot.onSlotChange(itemsToTransfer, var3);
-//             }
-//             else if (slotIndex != 1 && slotIndex != 0)
-//             {
-//                 if (FurnaceRecipes.smelting().func_151395_a(itemsToTransfer) != null)
-//                 {
-//                     if (!this.mergeItemStack(itemsToTransfer, 0, 1, false))
-//                     {
-//                         return null;
-//                     }
-//                 }
-//                 else if (TileEntityFurnace.func_145954_b(itemsToTransfer))
-//                 {
-//                     if (!this.mergeItemStack(itemsToTransfer, 1, 2, false))
-//                     {
-//                         return null;
-//                     }
-//                 }
-//                 else if (slotIndex >= 3 && slotIndex < 30)
-//                 {
-//                     if (!this.mergeItemStack(itemsToTransfer, 30, 39, false))
-//                     {
-//                         return null;
-//                     }
-//                 }
-//                 else if (slotIndex >= 30 && slotIndex < 39 && !this.mergeItemStack(itemsToTransfer, 3, 30, false))
-//                 {
-//                     return null;
-//                 }
-//             }
-//             else if (!this.mergeItemStack(itemsToTransfer, 3, 39, false))
-//             {
-//                 return null;
-//             }
-// 
-//             if (itemsToTransfer.stackSize == 0)
-//             {
-//                 slot.putStack((ItemStack)null);
-//             }
-//             else
-//             {
-//                 slot.onSlotChanged();
-//             }
-// 
-//             if (itemsToTransfer.stackSize == var3.stackSize)
-//             {
-//                 return null;
-//             }
-// 
-//             slot.onPickupFromSlot(player, itemsToTransfer);
+            sourceItems = itemsToTransfer.copy();
+
+            if (fromSlotIndex < TerrariumSlots) {
+                // from terrarium to player
+                if (!this.mergeItemStack(itemsToTransfer, TerrariumSlots, this.inventorySlots.size(), true)) {
+                    return null;
+                }
+            } 
+            else {
+                // from player to terrarium
+                if (!this.mergeItemStack(itemsToTransfer, 0, TerrariumSlots, false))
+                {
+                    return null;
+                }
+            }
+
+            if (itemsToTransfer.stackSize == 0)
+            {
+                slot.putStack((ItemStack)null);
+            }
+            else
+            {
+                slot.onSlotChanged();
+            }
         }
 
-        return var3;
+        return sourceItems;
     }
 }

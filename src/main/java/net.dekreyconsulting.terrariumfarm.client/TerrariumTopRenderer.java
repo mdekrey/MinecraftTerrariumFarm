@@ -20,7 +20,7 @@ public class TerrariumTopRenderer implements ISimpleBlockRenderingHandler {
             
             //which render pass are we doing?
             if (TerrariumFarmClientProxy.renderPass == 0) {
-                renderer.renderStandardBlock(Blocks.glass, x, y, z);
+                renderer.renderStandardBlock(net.dekreyconsulting.terrariumfarm.common.TerrariumBlocks.top, x, y, z);
                 renderer.renderBlockByRenderType(Blocks.wheat, x, y, z);
             }
             else {

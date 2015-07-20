@@ -13,14 +13,19 @@ import net.minecraft.item.Item;
 import net.minecraft.util.Facing;
 import net.minecraft.entity.player.EntityPlayer;
 
+import net.minecraft.client.renderer.texture.IIconRegister;
+import net.minecraft.util.IIcon;
+
 public class TerrariumTopBlock extends Block {
+    
+    private IIcon textureTop;
+    private IIcon textureSide;
 	
 	public TerrariumTopBlock() {
 		super(Material.glass);
 		setBlockName(TerrariumFarm.MODID + "_" + "terrariumTopBlock");
 		setHardness(0.6F);
 		setStepSound(Block.soundTypeStone);
-		setBlockTextureName("glass");
 	}
 
     public void onNeighborBlockChange(World world, int x, int y, int z, Block blockType)
@@ -56,6 +61,18 @@ public class TerrariumTopBlock extends Block {
     public boolean isOpaqueCube()
     {
         return false;
+    }
+    
+    public IIcon getIcon(int side, int meta)
+    {
+        return side == 1 ? textureTop : textureSide;
+    }
+	
+	
+    public void registerBlockIcons(IIconRegister iconRegister)
+    {
+        this.textureSide = iconRegister.registerIcon("terrariumfarm:terrarium_side");
+        this.textureTop = iconRegister.registerIcon("terrariumfarm:terrarium_top");
     }
     
     @Override

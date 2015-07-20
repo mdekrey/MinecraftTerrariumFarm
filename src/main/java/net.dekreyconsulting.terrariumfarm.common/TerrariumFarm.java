@@ -42,6 +42,8 @@ public class TerrariumFarm
         
         GameRegistry.registerItem(TerrariumItems.terrarium, "terrarium");
         
+        GameRegistry.registerTileEntity(TileEntityTerrarium.class, "terrariumEntity");
+        
         GameRegistry.addRecipe(new ItemStack(TerrariumItems.terrarium), new Object[]{
         	"AAA",
         	"ABA",

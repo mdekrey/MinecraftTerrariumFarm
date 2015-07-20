@@ -3,6 +3,7 @@ package net.dekreyconsulting.terrariumfarm.client;
 import net.minecraft.client.gui.inventory.GuiContainer;
 import net.minecraft.client.resources.I18n;
 import net.minecraft.entity.player.InventoryPlayer;
+import net.dekreyconsulting.terrariumfarm.common.TerrariumFarm;
 import net.dekreyconsulting.terrariumfarm.common.TerrariumContainer;
 import net.dekreyconsulting.terrariumfarm.common.TileEntityTerrarium;
 import net.minecraft.util.ResourceLocation;
@@ -10,7 +11,7 @@ import org.lwjgl.opengl.GL11;
 
 public class TerrariumInventoryGui extends GuiContainer
 {
-    private static final ResourceLocation texture = new ResourceLocation("textures/gui/container/furnace.png");
+    private static final ResourceLocation texture = new ResourceLocation(TerrariumFarm.MODID + ":textures/terrarium/gui.png");
     private TileEntityTerrarium tileEntity;
     
     public TerrariumInventoryGui(InventoryPlayer player, TileEntityTerrarium tileEntity)
@@ -36,12 +37,13 @@ public class TerrariumInventoryGui extends GuiContainer
         int var5 = (this.height - this.ySize) / 2;
         this.drawTexturedModalRect(var4, var5, 0, 0, this.xSize, this.ySize);
 
-        if (this.tileEntity.func_145950_i())
+        // progress bars
+        /*if (this.tileEntity.func_145950_i())
         {
             int var6 = this.tileEntity.func_145955_e(13);
             this.drawTexturedModalRect(var4 + 56, var5 + 36 + 12 - var6, 176, 12 - var6, 14, var6 + 1);
             var6 = this.tileEntity.func_145953_d(24);
             this.drawTexturedModalRect(var4 + 79, var5 + 34, 176, 14, var6 + 1, 16);
-        }
+        }*/
     }
 }
