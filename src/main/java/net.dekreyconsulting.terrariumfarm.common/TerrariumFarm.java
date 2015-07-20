@@ -1,6 +1,9 @@
 package net.dekreyconsulting.terrariumfarm.common;
 
+import net.dekreyconsulting.terrariumfarm.client.TerrariumFarmClientProxy;
+
 import cpw.mods.fml.common.Mod;
+import cpw.mods.fml.common.SidedProxy;
 import cpw.mods.fml.common.Mod.EventHandler;
 import cpw.mods.fml.common.Mod.Instance;
 
@@ -28,22 +31,27 @@ public class TerrariumFarm
     @Instance(value = TerrariumFarm.MODID) //Tell Forge what instance to use.
     public static TerrariumFarm instance;
     
-    public static Block terrariumBase;
-        
+    @SidedProxy(clientSide = "net.dekreyconsulting.terrariumfarm.client.TerrariumFarmClientProxy", serverSide = "net.dekreyconsulting.terrariumfarm.common.TerrariumFarmCommonProxy")
+    public static TerrariumFarmCommonProxy proxy;
+
     @EventHandler
     public void init(FMLInitializationEvent event) {
-        terrariumBase = new TerrariumBaseBlock();
+
+        GameRegistry.registerBlock(TerrariumBlocks.base, "terrariumBase");
+        GameRegistry.registerBlock(TerrariumBlocks.top, "terrariumTop");
         
-        GameRegistry.registerBlock(terrariumBase, "terrariumBase");
+        GameRegistry.registerItem(TerrariumItems.terrarium, "terrarium");
         
-        GameRegistry.addRecipe(new ItemStack(terrariumBase), new Object[]{
+        GameRegistry.addRecipe(new ItemStack(TerrariumItems.terrarium), new Object[]{
         	"AAA",
         	"ABA",
         	"CDC",
         	'A', Blocks.glass,
-            'B', Items.bucket,
+            'B', Items.water_bucket.setContainerItem(Items.bucket),
             'C', Items.redstone,
             'D', Blocks.dirt
         });
+        
+        TerrariumFarmClientProxy.setCustomRenderers();
     }
 }
