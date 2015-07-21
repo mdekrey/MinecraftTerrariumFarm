@@ -10,11 +10,8 @@ import net.minecraft.init.Blocks;
 import net.minecraft.init.Items;
 import net.minecraft.inventory.ISidedInventory;
 import net.minecraft.item.Item;
-import net.minecraft.item.ItemBlock;
-import net.minecraft.item.ItemHoe;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.ItemSword;
-import net.minecraft.item.ItemTool;
+import net.minecraft.item.ItemSeeds;
 import net.minecraft.item.crafting.FurnaceRecipes;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
@@ -27,6 +24,15 @@ public class TileEntityTerrarium extends TileEntity implements ISidedInventory
     private static final int[] ProduceAndSeedInventorySlots = new int[] {0,2,3,4,5};
     private ItemStack[] inventory = new ItemStack[6];
     private String customName;
+    private ItemSeeds seedType;
+    private int growState;
+    public net.minecraft.block.IGrowable growingBlock;
+    
+    
+    // 1200 is a magic number of average number of ticks between getting a tick
+    // It's actually 16*16*16/3 = 1365, but we're intentionally going for a faster tick rate
+    private static final int GrowthRate = 1200;
+    
 
     /**
      * Returns the number of slots in the inventory.
@@ -127,7 +133,6 @@ public class TileEntityTerrarium extends TileEntity implements ISidedInventory
         return this.customName != null && this.customName.length() > 0;
     }
 
-    // TODO - this was @Override before - should be related to how we rename on Anvil
     public void setCustomName(String newName)
     {
         this.customName = newName;
@@ -149,10 +154,22 @@ public class TileEntityTerrarium extends TileEntity implements ISidedInventory
                 this.inventory[var5] = ItemStack.loadItemStackFromNBT(var4);
             }
         }
+        
+        if (inventory[0] != null) {
+            seedType = (ItemSeeds)inventory[0].getItem();
+        }
 
         if (data.hasKey("CustomName"))
         {
             this.customName = data.getString("CustomName");
+        }
+        
+        if (data.hasKey("GrowState")) {
+            this.growState = data.getInteger("GrowState");
+        }
+        
+        if (data.hasKey("GrowingBlock")) {
+            this.growingBlock = (net.minecraft.block.IGrowable)Block.getBlockFromName(data.getString("GrowingBlock"));
         }
     }
 
@@ -173,10 +190,15 @@ public class TileEntityTerrarium extends TileEntity implements ISidedInventory
         }
 
         data.setTag("Items", var2);
+        data.setInteger("GrowState", this.growState);
 
         if (this.hasCustomInventoryName())
         {
             data.setString("CustomName", this.customName);
+        }
+        
+        if (growingBlock != null) {
+            data.setString("GrowingBlock", Block.blockRegistry.getNameForObject(growingBlock));
         }
     }
 
@@ -189,147 +211,84 @@ public class TileEntityTerrarium extends TileEntity implements ISidedInventory
         return 80;
     }
 
+    @Override
     public void updateEntity()
     {
-        // boolean var1 = this.burndownCounter > 0;
-        // boolean var2 = false;
+        // check if our expected seed type matches actual seed type
+        boolean needsNotify = false;
+        ItemSeeds actualSeedType = null;
+        if (inventory[0] != null) {
+            actualSeedType = (ItemSeeds)inventory[0].getItem();
+        }
+        if (actualSeedType != seedType) {
+            seedType = actualSeedType;
+            growingBlock = null;
+            this.growState = 0;
+            needsNotify = true;
+        }
+        
+        if (growingBlock == null && seedType != null) {
+            growingBlock = getGrowingBlock(seedType);
+            needsNotify = false;
+            worldObj.setBlockMetadataWithNotify(xCoord, yCoord+1, zCoord, 0, 2);
+        }
 
-//         if (this.burndownCounter > 0)
-//         {
-//             --this.burndownCounter;
-//         }
-// 
-//         if (!this.worldObj.isRemote)
-//         {
-//             if (this.burndownCounter != 0 || this.inventory[1] != null && this.inventory[0] != null)
-//             {
-//                 if (this.burndownCounter == 0 && this.hasSomethingToSmelt())
-//                 {
-//                     this.maxBurnTime = this.burndownCounter = getBurnTime(this.inventory[1]);
-// 
-//                     if (this.burndownCounter > 0)
-//                     {
-//                         var2 = true;
-// 
-//                         if (this.inventory[1] != null)
-//                         {
-//                             --this.inventory[1].stackSize;
-// 
-//                             if (this.inventory[1].stackSize == 0)
-//                             {
-//                                 Item var3 = this.inventory[1].getItem().getContainerItem();
-//                                 this.inventory[1] = var3 != null ? new ItemStack(var3) : null;
-//                             }
-//                         }
-//                     }
-//                 }
-// 
-//                 if (this.func_145950_i() && this.hasSomethingToSmelt())
-//                 {
-//                     ++this.cookingCounter;
-// 
-//                     if (this.cookingCounter == 200)
-//                     {
-//                         this.cookingCounter = 0;
-//                         this.completeSmelting();
-//                         var2 = true;
-//                     }
-//                 }
-//                 else
-//                 {
-//                     this.cookingCounter = 0;
-//                 }
-//             }
-// 
-//             if (var1 != this.burndownCounter > 0)
-//             {
-//                 var2 = true;
-//                 BlockFurnace.func_149931_a(this.burndownCounter > 0, this.worldObj, this.field_145851_c, this.field_145848_d, this.field_145849_e);
-//             }
-//         }
-// 
-//         if (var2)
-//         {
-//             this.onInventoryChanged();
-//         }
+        if (growingBlock != null && !worldObj.isRemote) {
+            
+            this.growState += inventory[0].stackSize;
+            
+            if (this.growState >= GrowthRate) {
+                int growth = this.growState / GrowthRate;
+                this.growState = this.growState % GrowthRate;
+            
+                for (int i = 0; i < growth; i++) {
+                    if (growingBlock.func_149851_a(worldObj, xCoord, yCoord+1, zCoord, worldObj.isRemote)) {
+                        System.out.println("Sending grow instruction");
+                        // grow
+                        growingBlock.func_149853_b(worldObj, worldObj.rand, xCoord, yCoord+1, zCoord);
+                    } else {
+                        // harvest
+                        // TODO - items dropping
+                        worldObj.setBlockMetadataWithNotify(xCoord, yCoord+1, zCoord, 0, 2);
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (needsNotify) {
+            this.worldObj.notifyBlockChange(this.xCoord, this.yCoord + 1, this.zCoord, TerrariumBlocks.top);
+        }
     }
-
-    // private boolean hasSomethingToSmelt()
-    // {
-    //     if (this.inventory[0] == null)
-    //     {
-    //         return false;
-    //     }
-    //     else
-    //     {
-    //         ItemStack var1 = FurnaceRecipes.smelting().func_151395_a(this.inventory[0]);
-    //         return var1 == null ? false : (this.inventory[2] == null ? true : (!this.inventory[2].isItemEqual(var1) ? false : (this.inventory[2].stackSize < this.getInventoryStackLimit() && this.inventory[2].stackSize < this.inventory[2].getMaxStackSize() ? true : this.inventory[2].stackSize < var1.getMaxStackSize())));
-    //     }
-    // }
-
-//     public void completeSmelting()
-//     {
-//         if (this.hasSomethingToSmelt())
-//         {
-//             ItemStack var1 = FurnaceRecipes.smelting().func_151395_a(this.inventory[0]);
-// 
-//             if (this.inventory[2] == null)
-//             {
-//                 this.inventory[2] = var1.copy();
-//             }
-//             else if (this.inventory[2].getItem() == var1.getItem())
-//             {
-//                 ++this.inventory[2].stackSize;
-//             }
-// 
-//             --this.inventory[0].stackSize;
-// 
-//             if (this.inventory[0].stackSize <= 0)
-//             {
-//                 this.inventory[0] = null;
-//             }
-//         }
-//     }
-
-//     public static int getBurnTime(ItemStack p_145952_0_)
-//     {
-//         if (p_145952_0_ == null)
-//         {
-//             return 0;
-//         }
-//         else
-//         {
-//             Item var1 = p_145952_0_.getItem();
-// 
-//             if (var1 instanceof ItemBlock && Block.getBlockFromItem(var1) != Blocks.air)
-//             {
-//                 Block var2 = Block.getBlockFromItem(var1);
-// 
-//                 if (var2 == Blocks.wooden_slab)
-//                 {
-//                     return 150;
-//                 }
-// 
-//                 if (var2.getMaterial() == Material.wood)
-//                 {
-//                     return 300;
-//                 }
-// 
-//                 if (var2 == Blocks.coal_block)
-//                 {
-//                     return 16000;
-//                 }
-//             }
-// 
-//             return var1 instanceof ItemTool && ((ItemTool)var1).getToolMaterialName().equals("WOOD") ? 200 : (var1 instanceof ItemSword && ((ItemSword)var1).func_150932_j().equals("WOOD") ? 200 : (var1 instanceof ItemHoe && ((ItemHoe)var1).getMaterialName().equals("WOOD") ? 200 : (var1 == Items.stick ? 100 : (var1 == Items.coal ? 1600 : (var1 == Items.lava_bucket ? 20000 : (var1 == Item.getItemFromBlock(Blocks.sapling) ? 100 : (var1 == Items.blaze_rod ? 2400 : 0)))))));
-//         }
-//     }
-
-    // public static boolean func_145954_b(ItemStack p_145954_0_)
-    // {
-    //     return getBurnTime(p_145954_0_) > 0;
-    // }
-
+    
+    public static net.minecraft.block.IGrowable getGrowingBlock(ItemSeeds seeds) {
+        // This is a really ugly reflection hack - hopefully the instance only has two Blocks.
+        // We're going to require one of them to return farmland; the other will be the one we return;
+        boolean inFarmland = false;
+        net.minecraft.block.IGrowable result = null;
+        Class<ItemSeeds> target = ItemSeeds.class;
+        java.lang.reflect.Field[] fields = target.getDeclaredFields();
+        for (int i = 0; i < fields.length; i++) {
+            if (fields[i].getDeclaringClass() == target && fields[i].getType() == Block.class) {
+                fields[i].setAccessible(true);
+                try {
+                    Block value = (Block)fields[i].get(seeds);
+                    if (value == Blocks.farmland) {
+                        inFarmland = true;
+                    } else if (value instanceof net.minecraft.block.IGrowable) {
+                        result = (net.minecraft.block.IGrowable)value;
+                    }
+                } catch (IllegalAccessException ex) {
+                    continue;
+                }
+            }
+        }
+        if (inFarmland) {
+            return result;
+        }
+        return null;
+    }
+    
     /**
      * Do not make give this method the name canInteractWith because it clashes with Container
      */
@@ -338,9 +297,11 @@ public class TileEntityTerrarium extends TileEntity implements ISidedInventory
         return this.worldObj.getTileEntity(this.xCoord, this.yCoord, this.zCoord) != this ? false : player.getDistanceSq((double)this.xCoord + 0.5D, (double)this.yCoord + 0.5D, (double)this.zCoord + 0.5D) <= 64.0D;
     }
 
-    public void openInventory() {}
+    public void openInventory() {
+    }
 
-    public void closeInventory() {}
+    public void closeInventory() {
+    }
 
     /**
      * Returns true if automation is allowed to insert the given stack (ignoring stack size) into the given slot.
@@ -385,7 +346,23 @@ public class TileEntityTerrarium extends TileEntity implements ISidedInventory
         return java.util.Arrays.asList(getAccessibleSlotsFromSide(side)).contains(slot);
     }
     
-    public void displayGuiTo(World world, EntityPlayer player) {
-        TerrariumFarm.proxy.displayTerrariumGui(world, this, player);
+    @Override
+    public net.minecraft.network.Packet getDescriptionPacket()
+    {
+        if (!worldObj.isRemote) {
+            NBTTagCompound syncData = new NBTTagCompound();
+            this.writeToNBT(syncData);
+            return new net.minecraft.network.play.server.S35PacketUpdateTileEntity(this.xCoord, this.yCoord, this.zCoord, 1, syncData);
+        } else {
+            return super.getDescriptionPacket();
+        }
+    }
+    @Override
+    public void onDataPacket(net.minecraft.network.NetworkManager net, net.minecraft.network.play.server.S35PacketUpdateTileEntity pkt)
+    {
+        if (worldObj.isRemote) {
+            readFromNBT(pkt.func_148857_g());
+            this.worldObj.notifyBlockChange(this.xCoord, this.yCoord + 1, this.zCoord, TerrariumBlocks.top);
+        }
     }
 }

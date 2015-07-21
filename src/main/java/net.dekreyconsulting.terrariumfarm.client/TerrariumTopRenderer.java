@@ -18,26 +18,28 @@ public class TerrariumTopRenderer implements ISimpleBlockRenderingHandler {
     public boolean renderWorldBlock(IBlockAccess world, int x, int y, int z,
                     Block block, int modelId, RenderBlocks renderer) {
             
-            //which render pass are we doing?
-            if (TerrariumFarmClientProxy.renderPass == 0) {
-                renderer.renderStandardBlock(net.dekreyconsulting.terrariumfarm.common.TerrariumBlocks.top, x, y, z);
-                renderer.renderBlockByRenderType(Blocks.wheat, x, y, z);
-            }
-            else {
-            }
+        //which render pass are we doing?
+        if (TerrariumFarmClientProxy.renderPass == 0) {
+            renderer.renderStandardBlock(net.dekreyconsulting.terrariumfarm.common.TerrariumBlocks.top, x, y, z);
             
-            return true;
+            net.dekreyconsulting.terrariumfarm.common.TileEntityTerrarium base = (net.dekreyconsulting.terrariumfarm.common.TileEntityTerrarium)world.getTileEntity(x, y-1, z);
+            if (base != null && base.growingBlock != null) {
+                renderer.renderBlockByRenderType((Block)base.growingBlock, x, y, z);
+            }
+        }
+        
+        return true;
     }
     
     @Override
     public boolean shouldRender3DInInventory(int something) {
             
-            return false;
+        return false;
     }
     
     @Override
     public int getRenderId() {
             
-            return TerrariumFarmClientProxy.terrariumRenderType;
+        return TerrariumFarmClientProxy.terrariumRenderType;
     }
 }
