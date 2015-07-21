@@ -24,6 +24,6 @@ class GroundSlot extends Slot {
     }
     
     public static boolean isValid(net.minecraft.item.ItemStack itemStack) {
-        return itemStack.getItem() == net.minecraft.item.Item.getItemFromBlock(Blocks.dirt);        
+        return itemStack.getItem() == net.minecraft.item.Item.getItemFromBlock(Blocks.dirt);
     }
 }

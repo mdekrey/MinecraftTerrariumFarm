@@ -11,7 +11,6 @@ import net.minecraft.init.Items;
 import net.minecraft.inventory.ISidedInventory;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
-import net.minecraft.item.ItemSeeds;
 import net.minecraft.item.crafting.FurnaceRecipes;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
@@ -24,14 +23,19 @@ public class TileEntityTerrarium extends TileEntity implements ISidedInventory
     private static final int[] AllInventorySlots = new int[] {0,1,2,3,4,5};
     private ItemStack[] inventory = new ItemStack[6];
     private String customName;
-    private ItemSeeds seedType;
+    private Item seedType;
+    private Item groundType;
     private int growState;
     public net.minecraft.block.IGrowable growingBlock;
     
     
     // 1365 is a magic number of average number of ticks between getting a tick, 16*16*16/3 = 1365
     // BUT, we only grow 1/3 of the time if we use an optimal planting pattern (rows, all hydrated farmland)
-    private static final int GrowthRate = 16*16*16;
+    // And terrariums are packed, which drops it by another 1/2..
+    // So, we'll use:
+    private static final int GrowthRate = 16*16*16*2;
+    // (If this is too fast, we can cut it down to 1/3 because it isn't hydrated, but we'll want to add water
+    // being pumped in.)
     
 
     /**
@@ -151,7 +155,11 @@ public class TileEntityTerrarium extends TileEntity implements ISidedInventory
         }
         
         if (inventory[0] != null) {
-            seedType = (ItemSeeds)inventory[0].getItem();
+            seedType = inventory[0].getItem();
+        }
+        
+        if (inventory[1] != null) {
+            groundType = inventory[1].getItem();
         }
 
         if (data.hasKey("CustomName"))
@@ -211,9 +219,11 @@ public class TileEntityTerrarium extends TileEntity implements ISidedInventory
     {
         // check if our expected seed type matches actual seed type
         boolean needsNotify = false;
-        ItemSeeds actualSeedType = null;
+        Item actualSeedType = null;
+        Item actualGroundType = null;
         if (inventory[0] != null && inventory[1] != null) {
-            actualSeedType = (ItemSeeds)inventory[0].getItem();
+            actualSeedType = inventory[0].getItem();
+            actualGroundType = inventory[1].getItem();
         }
         if (actualSeedType != seedType) {
             seedType = actualSeedType;
@@ -221,9 +231,15 @@ public class TileEntityTerrarium extends TileEntity implements ISidedInventory
             this.growState = 0;
             needsNotify = true;
         }
+        if (actualGroundType != groundType) {
+            groundType = actualGroundType;
+            growingBlock = null;
+            this.growState = 0;
+            needsNotify = true;
+        }
         
         if (growingBlock == null && seedType != null) {
-            growingBlock = getGrowingBlock(seedType);
+            growingBlock = getGrowingBlock(seedType, actualGroundType);
             needsNotify = true;
         }
 
@@ -283,7 +299,7 @@ public class TileEntityTerrarium extends TileEntity implements ISidedInventory
     }
     
     private void gatherItem(ItemStack item) {
-        if (item.getItem() instanceof ItemSeeds && canCombine(item, inventory[0])) {
+        if (SeedSlot.isValid(item) && canCombine(item, inventory[0])) {
             item = combine(item, 0);
         }
         
@@ -320,19 +336,19 @@ public class TileEntityTerrarium extends TileEntity implements ISidedInventory
         return item;
     }
     
-    public static net.minecraft.block.IGrowable getGrowingBlock(ItemSeeds seeds) {
+    public net.minecraft.block.IGrowable getGrowingBlock(Item seeds, Item ground) {
         // This is a really ugly reflection hack - hopefully the instance only has two Blocks.
         // We're going to require one of them to return farmland; the other will be the one we return;
         boolean inFarmland = false;
         net.minecraft.block.IGrowable result = null;
-        Class<ItemSeeds> target = ItemSeeds.class;
+        Class<?> target = seeds.getClass();
         java.lang.reflect.Field[] fields = target.getDeclaredFields();
         for (int i = 0; i < fields.length; i++) {
             if (fields[i].getDeclaringClass() == target && fields[i].getType() == Block.class) {
                 fields[i].setAccessible(true);
                 try {
                     Block value = (Block)fields[i].get(seeds);
-                    if (value == Blocks.farmland) {
+                    if (value.getItemDropped(0, worldObj.rand, 0) == ground) {
                         inFarmland = true;
                     } else if (value instanceof net.minecraft.block.IGrowable) {
                         result = (net.minecraft.block.IGrowable)value;

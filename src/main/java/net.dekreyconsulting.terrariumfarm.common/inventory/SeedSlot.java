@@ -15,7 +15,7 @@ class SeedSlot extends Slot {
     {
         if (itemStack == null)
             return true;
-        return itemStack.getItem() instanceof net.minecraft.item.ItemSeeds;
+        return SeedSlot.isValid(itemStack);
     }
 	
     public int getSlotStackLimit()
@@ -25,6 +25,7 @@ class SeedSlot extends Slot {
     }
     
     public static boolean isValid(net.minecraft.item.ItemStack itemStack) {
-        return itemStack.getItem() instanceof net.minecraft.item.ItemSeeds;
+        return itemStack.getItem() instanceof net.minecraft.item.ItemSeeds
+            || itemStack.getItem() instanceof net.minecraft.item.ItemSeedFood;
     }
 }
