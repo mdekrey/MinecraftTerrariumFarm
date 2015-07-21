@@ -51,7 +51,7 @@ public class TerrariumFarm
         	"CDC",
         	'A', Blocks.glass,
             'B', Items.water_bucket.setContainerItem(Items.bucket),
-            'C', Items.redstone,
+            'C', Blocks.iron_block,
             'D', Blocks.dirt
         });
         

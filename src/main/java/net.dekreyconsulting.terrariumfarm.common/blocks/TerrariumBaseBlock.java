@@ -30,19 +30,19 @@ public class TerrariumBaseBlock extends net.minecraft.block.BlockContainer imple
 	@Override
 	public boolean canPlaceBlockAt(World world, int x, int y, int z) {
 		Block baseBlock = world.getBlock(x, y, z);
-		return world.isAirBlock(x, y+1, z) && (baseBlock == Blocks.dirt || baseBlock == Blocks.farmland || baseBlock == Blocks.grass);
+		return world.isAirBlock(x, y+1, z) && (baseBlock == Blocks.iron_block);
 	}
 
     public void onNeighborBlockChange(World world, int x, int y, int z, Block blockType)
     {
 		if (world.getBlock(x, y+1, z) != TerrariumBlocks.top) {
-			world.setBlock(x, y, z, Blocks.dirt, 0, 3);
+			world.setBlock(x, y, z, Blocks.iron_block, 0, 3);
 		}
     }
 	
     public Item getItemDropped(int metadata, Random random, int p_149650_3_)
     {
-        return Blocks.dirt.getItemDropped(0, random, p_149650_3_);
+        return Blocks.iron_block.getItemDropped(0, random, p_149650_3_);
     }
 	
 	public void updateTick(World world, int x, int y, int z, Random random)
@@ -51,7 +51,7 @@ public class TerrariumBaseBlock extends net.minecraft.block.BlockContainer imple
 	
     public IIcon getIcon(int side, int meta)
     {
-        return side == 1 ? texture : Blocks.dirt.getBlockTextureFromSide(side);
+        return side == 1 ? texture : Blocks.iron_block.getBlockTextureFromSide(side);
     }
 	
 	
