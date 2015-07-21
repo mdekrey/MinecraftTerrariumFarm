@@ -340,23 +340,31 @@ public class TileEntityTerrarium extends TileEntity implements ISidedInventory
         // This is a really ugly reflection hack - hopefully the instance only has two Blocks.
         // We're going to require one of them to return farmland; the other will be the one we return;
         boolean inFarmland = false;
+        Item expectedGround = null;
         net.minecraft.block.IGrowable result = null;
         Class<?> target = seeds.getClass();
-        java.lang.reflect.Field[] fields = target.getDeclaredFields();
-        for (int i = 0; i < fields.length; i++) {
-            if (fields[i].getDeclaringClass() == target && fields[i].getType() == Block.class) {
-                fields[i].setAccessible(true);
-                try {
-                    Block value = (Block)fields[i].get(seeds);
-                    if (value.getItemDropped(0, worldObj.rand, 0) == ground) {
-                        inFarmland = true;
-                    } else if (value instanceof net.minecraft.block.IGrowable) {
-                        result = (net.minecraft.block.IGrowable)value;
+        while (!inFarmland && target != null) {
+            java.lang.reflect.Field[] fields = target.getDeclaredFields();
+            for (int i = 0; i < fields.length; i++) {
+                if (fields[i].getType() == Block.class) {
+                    fields[i].setAccessible(true);
+                    try {
+                        Block value = (Block)fields[i].get(seeds);
+                        if (value instanceof net.minecraft.block.IGrowable) {
+                            result = (net.minecraft.block.IGrowable)value;
+                        }
+                        else {
+                            expectedGround = value.getItemDropped(0, worldObj.rand, 0);
+                            if (expectedGround == ground) {
+                                inFarmland = true;
+                            }
+                        } 
+                    } catch (IllegalAccessException ex) {
+                        continue;
                     }
-                } catch (IllegalAccessException ex) {
-                    continue;
                 }
             }
+            target = target.getSuperclass();
         }
         if (inFarmland) {
             return result;
