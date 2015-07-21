@@ -217,7 +217,7 @@ public class TileEntityTerrarium extends TileEntity implements ISidedInventory
         // check if our expected seed type matches actual seed type
         boolean needsNotify = false;
         ItemSeeds actualSeedType = null;
-        if (inventory[0] != null) {
+        if (inventory[0] != null && inventory[1] != null) {
             actualSeedType = (ItemSeeds)inventory[0].getItem();
         }
         if (actualSeedType != seedType) {
@@ -229,36 +229,103 @@ public class TileEntityTerrarium extends TileEntity implements ISidedInventory
         
         if (growingBlock == null && seedType != null) {
             growingBlock = getGrowingBlock(seedType);
-            needsNotify = false;
+            needsNotify = true;
+        }
+
+        if (needsNotify) {
             worldObj.setBlockMetadataWithNotify(xCoord, yCoord+1, zCoord, 0, 2);
         }
 
-        if (growingBlock != null && !worldObj.isRemote) {
+        if (growingBlock != null && !worldObj.isRemote && inventory[1] != null) {
             
-            this.growState += inventory[0].stackSize;
+            this.growState += java.lang.Math.min(inventory[0].stackSize, inventory[1].stackSize);
             
             if (this.growState >= GrowthRate) {
                 int growth = this.growState / GrowthRate;
                 this.growState = this.growState % GrowthRate;
+                int blockMetadata = worldObj.getBlockMetadata(xCoord, yCoord+1, zCoord);
             
                 for (int i = 0; i < growth; i++) {
                     if (growingBlock.func_149851_a(worldObj, xCoord, yCoord+1, zCoord, worldObj.isRemote)) {
-                        System.out.println("Sending grow instruction");
                         // grow
                         growingBlock.func_149853_b(worldObj, worldObj.rand, xCoord, yCoord+1, zCoord);
+                        
+                        int newBlockMetadata = worldObj.getBlockMetadata(xCoord, yCoord+1, zCoord);
+                        if (newBlockMetadata == blockMetadata) {
+                            worldObj.setBlockMetadataWithNotify(xCoord, yCoord+1, zCoord, newBlockMetadata+1, 2);
+                        }
                     } else {
                         // harvest
-                        // TODO - items dropping
+                        
+                        // remove a seed!
+                        if (--inventory[0].stackSize == 0) {
+                            inventory[0] = null;
+                        }
+
+                        // pick up the stuff - first, scatter it!                        
+                        ((Block)growingBlock).dropBlockAsItem(worldObj, xCoord, yCoord, zCoord, blockMetadata, 0);
+                        
+                        // second, find it!
+                        net.minecraft.util.AxisAlignedBB myAABB = TerrariumBlocks.top.getCollisionBoundingBoxFromPool(worldObj, xCoord, yCoord, zCoord);
+                        java.util.List entities = worldObj.getEntitiesWithinAABBExcludingEntity(null, myAABB);
+                        
+                        // third, destroy it and gather it!
+                        for (int entityIndex = 0; entityIndex < entities.size(); ++entityIndex)
+                        {
+                            if (entities.get(entityIndex) instanceof net.minecraft.entity.item.EntityItem) {
+                                net.minecraft.entity.item.EntityItem item = (net.minecraft.entity.item.EntityItem)entities.get(entityIndex);
+                                item.setInvisible(true);
+                                worldObj.removeEntity(item);
+                                
+                                // gather the stuff!
+                                gatherItem(item.getEntityItem());
+                            }
+                        }
+                                                
                         worldObj.setBlockMetadataWithNotify(xCoord, yCoord+1, zCoord, 0, 2);
                         break;
                     }
                 }
             }
         }
-
-        if (needsNotify) {
-            this.worldObj.notifyBlockChange(this.xCoord, this.yCoord + 1, this.zCoord, TerrariumBlocks.top);
+    }
+    
+    private void gatherItem(ItemStack item) {
+        if (item.getItem() instanceof ItemSeeds && canCombine(item, inventory[0])) {
+            item = combine(item, 0);
         }
+        
+        for (int i = 0; i < ProduceInventorySlots.length && item != null; i++) {
+            if (canCombine(item, inventory[ProduceInventorySlots[i]])) {
+                item = combine(item, ProduceInventorySlots[i]);
+            }
+        }
+    }
+    
+    private boolean canCombine(ItemStack item, ItemStack target) {
+        if (target == null)
+            return true;
+        if (!target.isStackable())
+            return false;
+        
+        return target.isItemEqual(item);
+    }
+    
+    private ItemStack combine(ItemStack item, int targetIndex) {
+        if (inventory[targetIndex] == null) {
+            inventory[targetIndex] = item;
+            return null;
+        }
+        
+        int allowed = inventory[targetIndex].getMaxStackSize() - (inventory[targetIndex].stackSize);
+        if (item.stackSize <= allowed) {
+            inventory[targetIndex].stackSize += item.stackSize;
+            return null;
+        }
+         
+        inventory[targetIndex].stackSize += allowed;
+        item.stackSize -= allowed;
+        return item;
     }
     
     public static net.minecraft.block.IGrowable getGrowingBlock(ItemSeeds seeds) {

@@ -13,8 +13,6 @@ class SeedSlot extends Slot {
 	
     public boolean isItemValid(net.minecraft.item.ItemStack itemStack)
     {
-		if (!groundSlot.getHasStack())
-			return false;
         if (itemStack == null)
             return true;
         return itemStack.getItem() instanceof net.minecraft.item.ItemSeeds;
@@ -22,9 +20,8 @@ class SeedSlot extends Slot {
 	
     public int getSlotStackLimit()
     {
-		if (!groundSlot.getHasStack())
-			return 0;
-        return groundSlot.getStack().stackSize;
+        // TODO - not actually letting us get above 64
+        return 80;
     }
 	
 }

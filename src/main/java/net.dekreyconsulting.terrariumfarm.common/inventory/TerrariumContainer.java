@@ -87,14 +87,29 @@ public class TerrariumContainer extends Container
             if (fromSlotIndex < TerrariumSlots) {
                 // from terrarium to player
                 if (!this.mergeItemStack(itemsToTransfer, TerrariumSlots, this.inventorySlots.size(), true)) {
+                    // no change
                     return null;
                 }
             } 
             else {
                 // from player to terrarium
-                if (!this.mergeItemStack(itemsToTransfer, 0, TerrariumSlots, false))
-                {
-                    return null;
+                if (((Slot)this.inventorySlots.get(1)).isItemValid(itemsToTransfer)) {
+                    if (!this.mergeItemStack(itemsToTransfer, 1, 2, false)) {
+                        // no change
+                        return null;
+                    }
+                }
+                else if (((Slot)this.inventorySlots.get(0)).isItemValid(itemsToTransfer)) {
+                    if (!this.mergeItemStack(itemsToTransfer, 0, 1, false)) {
+                        // no change
+                        return null;
+                    }
+                }
+                else {
+                    if (!this.mergeItemStack(itemsToTransfer, 2, TerrariumSlots, false)) {
+                        // no change
+                        return null;
+                    }
                 }
             }
 
