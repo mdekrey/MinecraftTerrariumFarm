@@ -77,6 +77,7 @@ public class TerrariumBaseBlock extends net.minecraft.block.BlockContainer imple
 
     public void breakBlock(World world, int x, int y, int z, Block blockType, int p_149749_6_)
     {
+        TerrariumBlocks.top.breakBlock(world, x, y+1, z, TerrariumBlocks.top, p_149749_6_);
         super.breakBlock(world, x, y, z, blockType, p_149749_6_);
         world.removeTileEntity(x, y, z);
     }

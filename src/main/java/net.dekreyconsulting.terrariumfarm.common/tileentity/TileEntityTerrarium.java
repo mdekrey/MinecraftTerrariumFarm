@@ -21,7 +21,7 @@ public class TileEntityTerrarium extends TileEntity implements ISidedInventory
     private static final int[] SeedInventorySlots = new int[] {0};
     private static final int[] GroundInventorySlots = new int[] {1};
     private static final int[] ProduceInventorySlots = new int[] {2,3,4,5};
-    private static final int[] ProduceAndSeedInventorySlots = new int[] {0,2,3,4,5};
+    private static final int[] AllInventorySlots = new int[] {0,1,2,3,4,5};
     private ItemStack[] inventory = new ItemStack[6];
     private String customName;
     private ItemSeeds seedType;
@@ -29,9 +29,9 @@ public class TileEntityTerrarium extends TileEntity implements ISidedInventory
     public net.minecraft.block.IGrowable growingBlock;
     
     
-    // 1200 is a magic number of average number of ticks between getting a tick
-    // It's actually 16*16*16/3 = 1365, but we're intentionally going for a faster tick rate
-    private static final int GrowthRate = 1200;
+    // 1365 is a magic number of average number of ticks between getting a tick, 16*16*16/3 = 1365
+    // BUT, we only grow 1/3 of the time if we use an optimal planting pattern (rows, all hydrated farmland)
+    private static final int GrowthRate = 16*16*16;
     
 
     /**
@@ -109,11 +109,6 @@ public class TileEntityTerrarium extends TileEntity implements ISidedInventory
     public void setInventorySlotContents(int slot, ItemStack contents)
     {
         this.inventory[slot] = contents;
-
-        if (contents != null && contents.stackSize > this.getInventoryStackLimit())
-        {
-            contents.stackSize = this.getInventoryStackLimit();
-        }
     }
 
     /**
@@ -247,13 +242,10 @@ public class TileEntityTerrarium extends TileEntity implements ISidedInventory
             
                 for (int i = 0; i < growth; i++) {
                     if (growingBlock.func_149851_a(worldObj, xCoord, yCoord+1, zCoord, worldObj.isRemote)) {
-                        // grow
-                        growingBlock.func_149853_b(worldObj, worldObj.rand, xCoord, yCoord+1, zCoord);
+                        // use bonemeal - not intended
+                        //growingBlock.func_149853_b(worldObj, worldObj.rand, xCoord, yCoord+1, zCoord);
                         
-                        int newBlockMetadata = worldObj.getBlockMetadata(xCoord, yCoord+1, zCoord);
-                        if (newBlockMetadata == blockMetadata) {
-                            worldObj.setBlockMetadataWithNotify(xCoord, yCoord+1, zCoord, newBlockMetadata+1, 2);
-                        }
+                        worldObj.setBlockMetadataWithNotify(xCoord, yCoord+1, zCoord, blockMetadata+1, 2);
                     } else {
                         // harvest
                         
@@ -378,7 +370,8 @@ public class TileEntityTerrarium extends TileEntity implements ISidedInventory
         // 0 - IPlantable only
         // 1 - dirt only
         // Others, none
-        return slot == 2 ? false : true;
+        return (slot != 0 || SeedSlot.isValid(items))
+            && (slot != 1 || GroundSlot.isValid(items));
     }
 
     /**
@@ -387,12 +380,7 @@ public class TileEntityTerrarium extends TileEntity implements ISidedInventory
      */
     public int[] getAccessibleSlotsFromSide(int side)
     {
-        if (side == 0)
-            return SeedInventorySlots;
-        else if (side == 1)
-            return GroundInventorySlots;
-        else
-            return ProduceAndSeedInventorySlots;
+        return AllInventorySlots;
     }
 
     /**
@@ -410,7 +398,9 @@ public class TileEntityTerrarium extends TileEntity implements ISidedInventory
      */
     public boolean canExtractItem(int slot, ItemStack item, int side)
     {
-        return java.util.Arrays.asList(getAccessibleSlotsFromSide(side)).contains(slot);
+        if (slot == 0 || slot == 1)
+            return false; // Can't extract dirt or seed
+        return true;
     }
     
     @Override

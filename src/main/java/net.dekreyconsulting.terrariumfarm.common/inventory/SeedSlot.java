@@ -23,5 +23,8 @@ class SeedSlot extends Slot {
         // TODO - not actually letting us get above 64
         return 80;
     }
-	
+    
+    public static boolean isValid(net.minecraft.item.ItemStack itemStack) {
+        return itemStack.getItem() instanceof net.minecraft.item.ItemSeeds;
+    }
 }
