@@ -1,4 +1,4 @@
-tile.terrariumfarm_terrariumBaseBlock.name=Terrarium (Base)
-tile.terrariumfarm_terrariumTopBlock.name=Terrarium (Top)
+tile.terrariumfarm_terrariumBaseBlock.name=Terrarium
+tile.terrariumfarm_terrariumTopBlock.name=Terrarium
 item.terrariumfarm_terrarium.name=Terrarium
-terrariumfarm_terrarium.container=Terrarium (Container)
+terrariumfarm_terrarium.container=Terrarium
