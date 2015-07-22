@@ -140,17 +140,20 @@ public class TileEntityTerrarium extends TileEntity implements ISidedInventory
     public void readFromNBT(NBTTagCompound data)
     {
         super.readFromNBT(data);
-        NBTTagList var2 = data.getTagList("Items", 10);
-        this.inventory = new ItemStack[this.getSizeInventory()];
-
-        for (int var3 = 0; var3 < var2.tagCount(); ++var3)
-        {
-            NBTTagCompound var4 = var2.getCompoundTagAt(var3);
-            byte var5 = var4.getByte("Slot");
-
-            if (var5 >= 0 && var5 < this.inventory.length)
+        readSyncableDataFromNBT(data);
+        if (data.hasKey("Items")) {
+            NBTTagList var2 = data.getTagList("Items", 10);
+            this.inventory = new ItemStack[this.getSizeInventory()];
+    
+            for (int var3 = 0; var3 < var2.tagCount(); ++var3)
             {
-                this.inventory[var5] = ItemStack.loadItemStackFromNBT(var4);
+                NBTTagCompound var4 = var2.getCompoundTagAt(var3);
+                byte var5 = var4.getByte("Slot");
+    
+                if (var5 >= 0 && var5 < this.inventory.length)
+                {
+                    this.inventory[var5] = ItemStack.loadItemStackFromNBT(var4);
+                }
             }
         }
         
@@ -162,13 +165,16 @@ public class TileEntityTerrarium extends TileEntity implements ISidedInventory
             groundType = inventory[1].getItem();
         }
 
+        if (data.hasKey("GrowState")) {
+            this.growState = data.getInteger("GrowState");
+        }
+    }
+    
+    public void readSyncableDataFromNBT(NBTTagCompound data)
+    {
         if (data.hasKey("CustomName"))
         {
             this.customName = data.getString("CustomName");
-        }
-        
-        if (data.hasKey("GrowState")) {
-            this.growState = data.getInteger("GrowState");
         }
         
         if (data.hasKey("GrowingBlock")) {
@@ -179,6 +185,7 @@ public class TileEntityTerrarium extends TileEntity implements ISidedInventory
     public void writeToNBT(NBTTagCompound data)
     {
         super.writeToNBT(data);
+        writeSyncableDataToNBT(data);
         NBTTagList var2 = new NBTTagList();
 
         for (int var3 = 0; var3 < this.inventory.length; ++var3)
@@ -194,12 +201,20 @@ public class TileEntityTerrarium extends TileEntity implements ISidedInventory
 
         data.setTag("Items", var2);
         data.setInteger("GrowState", this.growState);
-
+        
         if (this.hasCustomInventoryName())
         {
             data.setString("CustomName", this.customName);
         }
         
+        if (growingBlock != null) {
+            data.setString("GrowingBlock", Block.blockRegistry.getNameForObject(growingBlock));
+        }
+    }
+    
+    public void writeSyncableDataToNBT(NBTTagCompound data) {
+        
+
         if (growingBlock != null) {
             data.setString("GrowingBlock", Block.blockRegistry.getNameForObject(growingBlock));
         }
@@ -219,82 +234,100 @@ public class TileEntityTerrarium extends TileEntity implements ISidedInventory
     {
         // check if our expected seed type matches actual seed type
         boolean needsNotify = false;
-        Item actualSeedType = null;
-        Item actualGroundType = null;
-        if (inventory[0] != null && inventory[1] != null) {
-            actualSeedType = inventory[0].getItem();
-            actualGroundType = inventory[1].getItem();
-        }
-        if (actualSeedType != seedType) {
-            seedType = actualSeedType;
-            growingBlock = null;
-            this.growState = 0;
-            needsNotify = true;
-        }
-        if (actualGroundType != groundType) {
-            groundType = actualGroundType;
-            growingBlock = null;
-            this.growState = 0;
-            needsNotify = true;
-        }
-        
-        if (growingBlock == null && seedType != null) {
-            growingBlock = getGrowingBlock(seedType, actualGroundType);
-            needsNotify = true;
-        }
-
-        if (needsNotify) {
-            worldObj.setBlockMetadataWithNotify(xCoord, yCoord+1, zCoord, 0, 2);
-        }
-
-        if (growingBlock != null && !worldObj.isRemote && inventory[1] != null) {
+    
+        int blockMetadata = 0;
+        if (!worldObj.isRemote) {
+            Item actualSeedType = null;
+            Item actualGroundType = null;
+            if (inventory[0] != null && inventory[1] != null) {
+                actualSeedType = inventory[0].getItem();
+                actualGroundType = inventory[1].getItem();
+            }
+            if (actualSeedType != seedType) {
+                seedType = actualSeedType;
+                growingBlock = null;
+                this.growState = 0;
+                needsNotify = true;
+            }
+            if (actualGroundType != groundType) {
+                groundType = actualGroundType;
+                growingBlock = null;
+                this.growState = 0;
+                needsNotify = true;
+            }
             
-            this.growState += java.lang.Math.min(inventory[0].stackSize, inventory[1].stackSize);
-            
-            if (this.growState >= GrowthRate) {
-                int growth = this.growState / GrowthRate;
-                this.growState = this.growState % GrowthRate;
-                int blockMetadata = worldObj.getBlockMetadata(xCoord, yCoord+1, zCoord);
-            
-                for (int i = 0; i < growth; i++) {
-                    if (growingBlock.func_149851_a(worldObj, xCoord, yCoord+1, zCoord, worldObj.isRemote)) {
-                        // use bonemeal - not intended
-                        //growingBlock.func_149853_b(worldObj, worldObj.rand, xCoord, yCoord+1, zCoord);
-                        
-                        worldObj.setBlockMetadataWithNotify(xCoord, yCoord+1, zCoord, blockMetadata+1, 2);
-                    } else {
-                        // harvest
-                        
-                        // remove a seed!
-                        if (--inventory[0].stackSize == 0) {
-                            inventory[0] = null;
-                        }
-
-                        // pick up the stuff - first, scatter it!                        
-                        ((Block)growingBlock).dropBlockAsItem(worldObj, xCoord, yCoord, zCoord, blockMetadata, 0);
-                        
-                        // second, find it!
-                        net.minecraft.util.AxisAlignedBB myAABB = TerrariumBlocks.top.getCollisionBoundingBoxFromPool(worldObj, xCoord, yCoord, zCoord);
-                        java.util.List entities = worldObj.getEntitiesWithinAABBExcludingEntity(null, myAABB);
-                        
-                        // third, destroy it and gather it!
-                        for (int entityIndex = 0; entityIndex < entities.size(); ++entityIndex)
-                        {
-                            if (entities.get(entityIndex) instanceof net.minecraft.entity.item.EntityItem) {
-                                net.minecraft.entity.item.EntityItem item = (net.minecraft.entity.item.EntityItem)entities.get(entityIndex);
-                                item.setInvisible(true);
-                                worldObj.removeEntity(item);
-                                
-                                // gather the stuff!
-                                gatherItem(item.getEntityItem());
+            if (growingBlock == null && seedType != null && groundType != null) {
+                //System.out.println(seedType.getUnlocalizedName() + " & " + groundType.getUnlocalizedName());
+                growingBlock = getGrowingBlock(seedType, groundType);
+                needsNotify = true;
+            }
+    
+            if (growingBlock != null && inventory[1] != null) {
+                
+                this.growState += java.lang.Math.min(inventory[0].stackSize, inventory[1].stackSize);
+                
+                if (this.growState >= GrowthRate) {
+                    int growth = this.growState / GrowthRate;
+                    this.growState = this.growState % GrowthRate;
+                    blockMetadata = worldObj.getBlockMetadata(xCoord, yCoord+1, zCoord);
+                    if (blockMetadata < 0) {
+                        blockMetadata = 0;
+                    }
+                
+                    for (int i = 0; i < growth; i++) {
+                        if (growingBlock.func_149851_a(worldObj, xCoord, yCoord+1, zCoord, worldObj.isRemote)) {
+                            //System.out.println("Grow "+((Block)growingBlock).getUnlocalizedName()+"!");
+                            // use bonemeal - not intended
+                            //growingBlock.func_149853_b(worldObj, worldObj.rand, xCoord, yCoord+1, zCoord);
+                            
+                            blockMetadata++;
+                            needsNotify = true;
+                        } else {
+                            // harvest
+                            //System.out.println("Harvest "+((Block)growingBlock).getUnlocalizedName()+"!");
+                            
+                            // remove a seed!
+                            if (--inventory[0].stackSize == 0) {
+                                inventory[0] = null;
                             }
+    
+                            // pick up the stuff - first, scatter it!                        
+                            ((Block)growingBlock).dropBlockAsItem(worldObj, xCoord, yCoord, zCoord, blockMetadata, 0);
+                            
+                            // second, find it!
+                            net.minecraft.util.AxisAlignedBB myAABB = TerrariumBlocks.top.getCollisionBoundingBoxFromPool(worldObj, xCoord, yCoord, zCoord);
+                            java.util.List entities = worldObj.getEntitiesWithinAABBExcludingEntity(null, myAABB);
+                            
+                            // third, destroy it and gather it!
+                            for (int entityIndex = 0; entityIndex < entities.size(); ++entityIndex)
+                            {
+                                if (entities.get(entityIndex) instanceof net.minecraft.entity.item.EntityItem) {
+                                    net.minecraft.entity.item.EntityItem item = (net.minecraft.entity.item.EntityItem)entities.get(entityIndex);
+                                    item.setInvisible(true);
+                                    worldObj.removeEntity(item);
+                                    
+                                    // gather the stuff!
+                                    gatherItem(item.getEntityItem());
+                                }
+                            }
+                                                    
+                            blockMetadata = 0;
+                            needsNotify = true;
+                            break;
                         }
-                                                
-                        worldObj.setBlockMetadataWithNotify(xCoord, yCoord+1, zCoord, 0, 2);
-                        break;
                     }
                 }
             }
+        }
+        
+        if (needsNotify) {
+            if (growingBlock != null) {
+                //System.out.println("Update "+((Block)growingBlock).getUnlocalizedName()+" with metadata " + blockMetadata);
+            } else {
+                blockMetadata = 0;
+            }
+            worldObj.markBlockForUpdate(xCoord, yCoord, zCoord);
+            worldObj.setBlockMetadataWithNotify(xCoord, yCoord+1, zCoord, blockMetadata, 2);
         }
     }
     
@@ -432,7 +465,7 @@ public class TileEntityTerrarium extends TileEntity implements ISidedInventory
     {
         if (!worldObj.isRemote) {
             NBTTagCompound syncData = new NBTTagCompound();
-            this.writeToNBT(syncData);
+            this.writeSyncableDataToNBT(syncData);
             return new net.minecraft.network.play.server.S35PacketUpdateTileEntity(this.xCoord, this.yCoord, this.zCoord, 1, syncData);
         } else {
             return super.getDescriptionPacket();
