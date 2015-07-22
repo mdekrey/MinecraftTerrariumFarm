@@ -23,16 +23,17 @@ public class TerrariumTopBlock extends Block {
     private IIcon textureSide;
 	
 	public TerrariumTopBlock() {
-		super(Material.glass);
+		super(Material.iron);
 		setBlockName(TerrariumFarm.MODID + "_" + "terrariumTopBlock");
 		setHardness(0.6F);
 		setStepSound(Block.soundTypeGlass);
+		setHarvestLevel("pickaxe", 2);
 	}
 
     public void onNeighborBlockChange(World world, int x, int y, int z, Block blockType)
     {
 		if (world.getBlock(x, y-1, z) != TerrariumBlocks.base) {
-			this.breakBlock(world, x, y, z, this, 0);
+			this.dropBlockAsItem(world, x, y, z, 0, 0);
 			world.setBlockToAir(x, y, z);
 		}
     }
@@ -40,18 +41,33 @@ public class TerrariumTopBlock extends Block {
     @Override
     public Item getItemDropped(int metadata, Random random, int p_149650_3_)
     {
-        return null;
+        return TerrariumItems.terrarium;
     }
     
     @Override
     public int quantityDropped(Random rand)
     {
-        return 0;
+        return 1;
     }
     
     public void breakBlock(World world, int x, int y, int z, Block block, int fortune)
     {
-        java.util.ArrayList<ItemStack> items = getDrops(world, x, y, z, 0, fortune);
+        java.util.ArrayList<ItemStack> items = new java.util.ArrayList<ItemStack>();
+        
+        net.minecraft.tileentity.TileEntity t = world.getTileEntity(x, y-1, z);
+        
+        if (t != null && t instanceof TileEntityTerrarium) {
+            TileEntityTerrarium tile = (TileEntityTerrarium)t;
+            
+            for (int var8 = 0; var8 < tile.getSizeInventory(); ++var8)
+            {
+                ItemStack otherStack = tile.getStackInSlot(var8);
+                if (otherStack != null) {
+                    items.add((ItemStack)otherStack.copy());
+                }
+            }
+        }
+
         for (int i = 0; i < items.size(); ++i)
         {
             ItemStack var9 = items.get(i);
@@ -71,7 +87,7 @@ public class TerrariumTopBlock extends Block {
                         var13 = var9.stackSize;
                     }
                     
-                    System.out.println("Dropping " + var13 + " of " + var9.stackSize + " " + var9.getDisplayName());
+                    //System.out.println("Dropping " + var13 + " of " + var9.stackSize + " " + var9.getDisplayName());
 
                     var14 = new net.minecraft.entity.item.EntityItem(world, (double)((float)x + var10), (double)((float)y + var11), (double)((float)z + var12), var9.splitStack(var13));
                     float var15 = 0.05F;
@@ -91,34 +107,6 @@ public class TerrariumTopBlock extends Block {
         super.breakBlock(world, x, y, z, block, fortune);
     }
 
-	
-    @Override
-    public java.util.ArrayList<ItemStack> getDrops(World world, int x, int y, int z, int metadata, int fortune)
-    {
-        java.util.ArrayList<ItemStack> items = new java.util.ArrayList<ItemStack>();
-        
-        net.minecraft.tileentity.TileEntity t = world.getTileEntity(x, y-1, z);
-        
-        if (t != null && t instanceof TileEntityTerrarium) {
-            ItemStack stack = new ItemStack(TerrariumItems.terrarium, 1, 0);
-            TileEntityTerrarium tile = (TileEntityTerrarium)t;
-            
-            for (int var8 = 0; var8 < tile.getSizeInventory(); ++var8)
-            {
-                ItemStack otherStack = tile.getStackInSlot(var8);
-                if (otherStack != null) {
-                    items.add((ItemStack)otherStack.copy());
-                }
-            }
-            
-            if (tile.hasCustomInventoryName()) {
-                stack.setStackDisplayName(tile.getInventoryName());
-            }
-            items.add(stack);
-        }
-
-        return items;
-    }
     
     public int getRenderBlockPass()
     {

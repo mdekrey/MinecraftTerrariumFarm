@@ -19,12 +19,14 @@ public class TerrariumBaseBlock extends net.minecraft.block.BlockContainer imple
     private IIcon texture;
 	
 	public TerrariumBaseBlock() {
-        super(Material.ground);
+        super(Material.iron);
 		setBlockName(TerrariumFarm.MODID + "_" + "terrariumBaseBlock");
-		setHardness(1.6F);
-		setStepSound(Block.soundTypeGravel);
+		setHardness(5.0F);
+        setResistance(10.0f);
+		setStepSound(Block.soundTypeMetal);
         this.setTickRandomly(false);
         this.setBlockBounds(0.0F, 0.0F, 0.0F, 1.0F, 1.0F, 1.0F);
+        setHarvestLevel("pickaxe", 1);
 	}
 	
 	@Override
