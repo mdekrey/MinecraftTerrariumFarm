@@ -10,12 +10,15 @@ import net.minecraft.world.World;
 
 public class TerrariumFarmClientProxy extends TerrariumFarmCommonProxy {
 
-    public static int terrariumRenderType;
     public static int renderPass;
+    
+    public TerrariumFarmClientProxy() {
+        TerrariumFarmClientProxy.setCustomRenderers();
+    }
     
     public static void setCustomRenderers()
     {
-        terrariumRenderType = RenderingRegistry.getNextAvailableRenderId();
+        net.dekreyconsulting.terrariumfarm.common.TerrariumFarm.terrariumRenderType = RenderingRegistry.getNextAvailableRenderId();
         RenderingRegistry.registerBlockHandler(new TerrariumTopRenderer());
     }
     

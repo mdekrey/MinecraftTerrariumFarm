@@ -40,6 +40,6 @@ public class TerrariumTopRenderer implements ISimpleBlockRenderingHandler {
     @Override
     public int getRenderId() {
             
-        return TerrariumFarmClientProxy.terrariumRenderType;
+        return net.dekreyconsulting.terrariumfarm.common.TerrariumFarm.terrariumRenderType;
     }
 }

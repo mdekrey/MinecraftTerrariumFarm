@@ -29,6 +29,8 @@ public class TerrariumFarm
     //Set the version of the mod.
     public static final String MODVER = "0.0.1";
 
+    public static int terrariumRenderType = 0;
+
     @Instance(value = TerrariumFarm.MODID) //Tell Forge what instance to use.
     public static TerrariumFarm instance;
     
@@ -57,6 +59,5 @@ public class TerrariumFarm
         
         NetworkRegistry.INSTANCE.registerGuiHandler(this, new TerrariumInventoryGuiHandler());
         
-        TerrariumFarmClientProxy.setCustomRenderers();
     }
 }

@@ -51,7 +51,6 @@ public class TerrariumTopBlock extends Block {
     
     public void breakBlock(World world, int x, int y, int z, Block block, int fortune)
     {
-        System.out.println("Breaking!");
         java.util.ArrayList<ItemStack> items = getDrops(world, x, y, z, 0, fortune);
         for (int i = 0; i < items.size(); ++i)
         {
@@ -156,7 +155,7 @@ public class TerrariumTopBlock extends Block {
     @Override
     public int getRenderType()
     {
-        return TerrariumFarmClientProxy.terrariumRenderType;
+        return TerrariumFarm.terrariumRenderType;
     }
     
     public boolean shouldSideBeRendered(IBlockAccess access, int x, int y, int z, int side) {
