@@ -3,17 +3,15 @@ package net.dekreyconsulting.terrariumfarm.common;
 import net.minecraft.inventory.Slot;
 import net.minecraft.inventory.IInventory;
 
-class SeedSlot extends Slot {
+class ProduceSlot extends Slot {
 	
-	public SeedSlot(IInventory inventory, int slotIndex, int x, int y) {
+	public ProduceSlot(IInventory inventory, int slotIndex, int x, int y) {
 		super(inventory, slotIndex, x, y);
 	}
 	
     public boolean isItemValid(net.minecraft.item.ItemStack itemStack)
     {
-        if (itemStack == null)
-            return true;
-        return SeedSlot.isValid(itemStack);
+        return false;
     }
 	
     public int getSlotStackLimit()
